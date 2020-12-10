@@ -4,31 +4,43 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Stack;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class Day10Puzzle2 {
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		List<String> lines = Files.readAllLines(Paths.get(Day10Puzzle2.class.getResource("input.txt").toURI()));
-		List<Long> numbers = lines.stream().map(Long::parseLong).sorted().collect(Collectors.toList());
+		List<Integer> numbers = lines.stream().map(s -> Integer.parseInt(s)).sorted().collect(Collectors.toList());
+
+		int start = 0;
+		int destination = numbers.get(numbers.size() - 1) + 3;
+		numbers.add(0, start);
+		numbers.add(destination);
+
+		long[] f = new long[numbers.size()];
+		f[numbers.size()-1] = 1;
 		
-		long last= 0;
-		int c1 = 0;
-		int c3 = 0;
-		for (long n : numbers) {
-			if (n-last == 1) {
-				c1++;
-			} else if (n-last == 3) {
-				c3++;
-			} else {
-				System.err.println("Invalid input: " + n);
-			}
+		for (int i = numbers.size()-2; i >= 0; i--) {
+			int number = numbers.get(i);
 			
-			last=n;
+			for (int j = i+1; j < numbers.size(); j++) {
+				int nextNumber = numbers.get(j);
+				if (nextNumber - number > 3) {
+					break;
+				}
+				
+				f[i] += f[j];
+			}
 		}
-		
-		c3++;
-		
-		System.out.println("c1=" + c1 + "  c3=" + c3 + "   c1*c3=" + (c1*c3));
+
+		System.out.println(Arrays.toString(f));
 	}
 }
