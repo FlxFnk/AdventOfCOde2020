@@ -4,18 +4,20 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Day14Puzzle2 {
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		List<String> lines = Files.readAllLines(Paths.get(Day14Puzzle2.class.getResource("input.txt").toURI()));
 
 		String currentMask = "";
-		Map<Integer, String> memory = new TreeMap<>();
+		Map<Long, Long> memory = new TreeMap<>();
 		for (String line : lines) {
 			if (line.startsWith("mask = ")) {
 				currentMask = line.substring(7);
@@ -27,11 +29,11 @@ public class Day14Puzzle2 {
 				Matcher matcher = pattern.matcher(line);
 
 				if (matcher.matches()) {
-					int address = Integer.parseInt(matcher.group(1));
-					String value = padLeftZeros(Long.toBinaryString(Long.parseLong(matcher.group(2))),
+					long value = Long.parseLong(matcher.group(2));
+					String  address = padLeftZeros(Long.toBinaryString(Long.parseLong(matcher.group(1))),
 							currentMask.length());
-					String modifiedValue = applyMask(value, currentMask);
-					memory.put(address, modifiedValue);
+					List<Long> modifiedAddresses= applyMask(address, currentMask);
+					modifiedAddresses.stream().forEach(a -> memory.put(a, value));
 				} else {
 					System.err.println("Wrong pattern: " + line);
 				}
@@ -39,9 +41,8 @@ public class Day14Puzzle2 {
 		}
 
 		long sum = memory.entrySet().stream().mapToLong(e -> {
-			long value = Long.parseLong(e.getValue(), 2);
-			System.out.println(e.getKey() + "=" + e.getValue() + " (" + value + ")");
-			return value;
+			System.out.println(e.getKey() + "=" + e.getValue());
+			return e.getValue();
 		}).sum();
 		
 		System.out.println("sum: " + sum);
@@ -60,19 +61,37 @@ public class Day14Puzzle2 {
 		return sb.toString();
 	}
 
-	private static String applyMask(String value, String mask) {
+	private static List<Long> applyMask(String value, String mask) {
 		if (value.length() != mask.length()) {
 			System.err.println("Different lengths:" + value + "  " + mask);
 		}
 
-		char[] result = value.toCharArray();
+		List<char[]> result = new LinkedList<>();
+		result.add(value.toCharArray());
 		for (int i = 0; i < value.length(); i++) {
-			if (mask.charAt(i) == '0') {
-				result[i] = '0';
-			} else if (mask.charAt(i) == '1') {
-				result[i] = '1';
+			if (mask.charAt(i) == '1') {
+				for (int j = 0; j < result.size(); j++) {
+					result.get(j)[i] = '1';
+				}
+			} else if (mask.charAt(i) == 'X') {
+				List<char[]> newResult = new LinkedList<>();
+				for (int j = 0; j < result.size(); j++) {
+					char[] a = result.get(j);
+					char[] a0 = new char[a.length];
+					char[] a1 = new char[a.length];
+					System.arraycopy(a, 0, a0, 0, a.length);
+					System.arraycopy(a, 0, a1, 0, a.length);
+					a0[i] = '0';
+					a1[i] = '1';
+					newResult.add(a0);
+					newResult.add(a1);
+				};
+				
+				result.clear();
+				result.addAll(newResult);
 			}
 		}
-		return new String(result);
+		
+		return result.stream().map(String::new).map(s -> Long.parseLong(s, 2)).collect(Collectors.toList());
 	}
 }
